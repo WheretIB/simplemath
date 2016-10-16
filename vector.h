@@ -121,6 +121,18 @@ struct vec2
 		return len;
 	}
 
+	vec2 normalized() const
+	{
+		float len = length();
+
+		if(len < Epsilon())
+			return *this;
+
+		float inv = 1.0f / len;
+
+		return *this * inv;
+	}
+
 	vec2 rotated(float radians) const
 	{
 		return vec2(x * cosf(radians) - y * sinf(radians), x * sinf(radians) + y * cosf(radians));
@@ -535,6 +547,12 @@ inline vec3 operator/(const float f, const vec3& v)
 inline vec4 operator/(const float f, const vec4& v)
 {
 	return vec4(f / v.x, f / v.y, f / v.z, f / v.w);
+}
+
+inline vec2 normalize(vec2 v)
+{
+	v.normalize();
+	return v;
 }
 
 inline vec3 normalize(vec3 v)
