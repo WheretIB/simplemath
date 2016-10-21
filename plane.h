@@ -4,6 +4,7 @@
 
 #include "vector.h"
 #include "matrix.h"
+#include "aabb.h"
 
 #define Epsilon() 1e-6f
 
@@ -230,6 +231,169 @@ inline float cos_of_angle_between_planes(const plane& p1, const plane& p2)
 inline float angle_between_planes(const plane& p1, const plane& p2)
 {
 	return acosf(cos_of_angle_between_planes(p1, p2));
+}
+
+// Returns furthest distance to the intersection of aabb planes or a negative value if there is no intersection
+inline float line_intersects_aabb(const line& l, const aabb& box)
+{
+	vec3 min = box.min_point();
+	vec3 max = box.max_point();
+
+	float dist = -1.0f;
+
+	vec3 intersection;
+
+	if(intersect_plane(l, plane(vec4(1, 0, 0, -min.x)), intersection))
+	{
+		if(intersection.y > min.y && intersection.y < max.y && intersection.z > min.z && intersection.z < max.z)
+		{
+			float length = (l.p - intersection).length();
+
+			if(length > dist)
+				dist = length;
+		}
+	}
+
+	if(intersect_plane(l, plane(vec4(0, 1, 0, -min.y)), intersection))
+	{
+		if(intersection.x > min.x && intersection.x < max.x && intersection.z > min.z && intersection.z < max.z)
+		{
+			float length = (l.p - intersection).length();
+
+			if(length > dist)
+				dist = length;
+		}
+	}
+
+	if(intersect_plane(l, plane(vec4(0, 0, 1, -min.z)), intersection))
+	{
+		if(intersection.x > min.x && intersection.x < max.x && intersection.y > min.y && intersection.y < max.y)
+		{
+			float length = (l.p - intersection).length();
+
+			if(length > dist)
+				dist = length;
+		}
+	}
+
+	if(intersect_plane(l, plane(vec4(1, 0, 0, -max.x)), intersection))
+	{
+		if(intersection.y > min.y && intersection.y < max.y && intersection.z > min.z && intersection.z < max.z)
+		{
+			float length = (l.p - intersection).length();
+
+			if(length > dist)
+				dist = length;
+		}
+	}
+
+	if(intersect_plane(l, plane(vec4(0, 1, 0, -max.y)), intersection))
+	{
+		if(intersection.x > min.x && intersection.x < max.x && intersection.z > min.z && intersection.z < max.z)
+		{
+			float length = (l.p - intersection).length();
+
+			if(length > dist)
+				dist = length;
+		}
+	}
+
+	if(intersect_plane(l, plane(vec4(0, 0, 1, -max.z)), intersection))
+	{
+		if(intersection.x > min.x && intersection.x < max.x && intersection.y > min.y && intersection.y < max.y)
+		{
+			float length = (l.p - intersection).length();
+
+			if(length > dist)
+				dist = length;
+		}
+	}
+
+	return dist;
+}
+
+inline float line_intersect_triangle_distance(const line& l, const vec3& a, const vec3& b, const vec3& c)
+{
+	// http://en.wikipedia.org/wiki/Moller–Trumbore_intersection_algorithm
+	vec3 e1, e2;
+	vec3 p, q, t;
+	float det, invDet, u, v;
+
+	// Find vectors for two edges sharing V1
+	e1 = b - a;
+	e2 = c - a;
+
+	// Begin calculating determinant - also used to calculate u parameter
+	p = cross(l.n, e2);
+
+	// If determinant is near zero, ray lies in plane of triangle
+	det = dot(e1, p);
+
+	if(det > -Epsilon() && det < Epsilon())
+		return -1.0f;
+
+	invDet = 1.0f / det;
+
+	// Calculate distance from V1 to ray origin
+	t = l.p - a;
+
+	// Calculate u parameter and test bound
+	u = dot(t, p) * invDet;
+
+	// The intersection lies outside of the triangle
+	if(u < 0.0f || u > 1.0f)
+		return -1.0f;
+
+	// Prepare to test v parameter
+	q = cross(t, e1);
+
+	// Calculate V parameter and test bound
+	v = dot(l.n, q) * invDet;
+
+	// The intersection lies outside of the triangle
+	if(v < 0.0f || u + v > 1.0f)
+		return -1.0f;
+
+	float distance = dot(e2, q) * invDet;
+
+	if(distance > Epsilon())
+		return distance;
+
+	return -1.0f;
+}
+
+inline bool line_intersects_triangle(const line& l, const vec3& a, const vec3& b, const vec3& c)
+{
+	return line_intersect_triangle_distance(l, a, b, c) >= 0.0f;
+}
+
+inline bool line_intersects_triangle(const line& l, const vec2& a, const vec2& b, const vec2& c)
+{
+	float dx = l.p.x - a.x;
+	float dy = l.p.y - a.y;
+
+	bool sign = (b.x - a.x) * dy - (b.y - a.y) * dx > 0;
+
+	if((c.x - a.x) * dy - (c.y - a.y) * dx > 0 == sign)
+		return false;
+
+	if((c.x - b.x) * (l.p.y - b.y) - (c.y - b.y) * (l.p.x - b.x) > 0 != sign)
+		return false;
+
+	return true;
+}
+
+inline line unproject_ray(const mat4& m, vec2 point)
+{
+	mat4 mi = m.inverse();
+
+	vec3 ptMin(point.x * 2.0f - 1.0f, point.y * 2.0f - 1.0f, 0.0);
+	vec3 ptMax(point.x * 2.0f - 1.0f, point.y * 2.0f - 1.0f, 1.0);
+
+	ptMin = mi * ptMin;
+	ptMax = mi * ptMax;
+
+	return line(ptMin, ptMax);
 }
 
 #undef Epsilon

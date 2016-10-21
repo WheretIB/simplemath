@@ -824,4 +824,11 @@ inline void mul_m4_v3(vec4 &ret, const vec3 &v, const mat4 &m)
 	ret.w = m.mat[12] * v.x + m.mat[13] * v.y + m.mat[14] * v.z + m.mat[15];
 }
 
+inline vec4 project_vector(const mat4& m, vec4 point)
+{
+	point = m * point;
+
+	return point / point.w * 0.5f + vec4(0.5f);
+}
+
 #undef DegToRad
