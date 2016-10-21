@@ -677,7 +677,7 @@ inline vec4 pow(const vec4& v, float f)
 	return vec4(powf(v.x, f), powf(v.y, f), powf(v.z, f), powf(v.w, f));
 }
 
-inline vec3 normal(const vec3& a, const vec3& b, const vec3& c)
+inline vec3 triangle_normal(const vec3& a, const vec3& b, const vec3& c)
 {
 	vec3 ret;
 

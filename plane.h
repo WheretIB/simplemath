@@ -46,7 +46,7 @@ struct plane
 
 	void from_triangle(const vec3& a, const vec3& b, const vec3& c)
 	{
-		pl = vec4(normal(a, b, c), 1.0);
+		pl = vec4(triangle_normal(a, b, c), 1.0);
 		pl = vec4(pl.xyz(), -dot(pl.xyz(), a));
 	}
 
